@@ -42,7 +42,7 @@ function download($ftp_resource, string $source, string $dest = null, bool $debu
         return true;
     }
     else {
-        return ftp_get($ftp_resource, $dest, $source, FTP_BINARY);   
+        return ftp_get($ftp_resource, $dest, $source, FTP_BINARY);
     }
 }
 
@@ -56,25 +56,22 @@ function fLogin($ftp_resource, string $user, string $pwd, bool $enablePassiveMod
     return $status;
 }
 
-function digDirectories($ftp_resource, string $path, bool $isPass = false, string $comanyID = null){
+function digDirectories($ftp_resource, string $path, bool $isPass = false, string $companyID = null){
     $list = ftp_nlist($ftp_resource,$path);
     if($isPass){
-        if(count($list) === 0){exit(0);}
-        foreach($list as $unmatchDir){
-            $dest = $unmatchDir;
-            is_int(strrpos($dest,'/')) ? $dest = substr($unmatchDir,strrpos($dest,'/')+1) : null;
-            download($ftp_resource,$unmatchDir,__DIR__.'/'.$comanyID.'_'.$dest,true); 
+        if(count($list) === 0){return;}
+        foreach($list as $unMatchDir){
+            $dest = $unMatchDir;
+            is_int(strrpos($dest,'/')) ? $dest = substr($unMatchDir,strrpos($dest,'/')+1) : null;
+            download($ftp_resource,$unMatchDir,__DIR__.'/'.$companyID.'_'.$dest);
         }
     }
     else {
-        foreach($list as $companyID){
-            $innerDir = ftp_nlist($ftp_resource,$companyID);
+        foreach($list as $ID){
+            $innerDir = ftp_nlist($ftp_resource,$ID);
             foreach($innerDir as $inDir){
                 $lastString = substr($inDir,strrpos($inDir,'/')+1);
-                if(strcasecmp($lastString,'unmatched') !== 0) {continue;}
-                echo $inDir.PHP_EOL;
-                // echo strcasecmp($lastString,'unmatched') === 0 ? $inDir.PHP_EOL : null ;
-                // digDirectories($ftp_resource,$inDir,true,$companyID);
+                strcasecmp($lastString,'unmatched') === 0 ? digDirectories($ftp_resource,$inDir,true,$ID) : null ;
             }
         }
     }
