@@ -11,7 +11,7 @@ try {
     $targetDirectory = 'ManagedInventory';
     $rootDir = ftp_nlist($ftp_resource, ftp_pwd($ftp_resource));
     $statusFound = false;
-    foreach ($top as $file) {
+    foreach ($rootDir as $file) {
         if (strcasecmp($file, $targetDirectory) === 0) {
             $statusFound = $file;
             break;
@@ -24,31 +24,26 @@ try {
         exit(0);
     }
     ftp_chdir($ftp_resource, $statusFound);
-    $listDir = ftp_nlist($ftp_resource, ftp_pwd($ftp_resource));
-    foreach ($listDir as $dir) {
-        // var_dump($dir);
-        $vendorDir = ftp_nlist($ftp_resource, $dir);
-        // var_dump($vendorDir);
-        $statusCSV = false;
-        foreach ($vendorDir as $folder) {
-            if (strcasecmp($folder, 'unmatched') == 0) {
-                $statusCSV = $folder;
-                break;
-            }
-        }
-    }
+    $companyID = '';
+    digDirectories($ftp_resource,ftp_pwd($ftp_resource));
 } catch (Exception $excetion) {
     echo $excetion->getMessage();
 }
 
-function download($ftp_resource, string $source, string $dest = null): bool
+function download($ftp_resource, string $source, string $dest = null, bool $debug = false): bool
 {
     if ($dest === null){
         $separator = __DIR__;
         substr($separator,-1) !== '/' ? $separator .= '/':null; // appends trailing slash if not present
         $dest == null ? $separator.substr($source, strrpos($source,'/') + 1 ) : $dest;
     }
-    return ftp_get($ftp_resource, $dest, $source, FTP_BINARY);
+    if($debug){
+        echo 'Source: '.$source."\nDestination: ".$dest.PHP_EOL;
+        return true;
+    }
+    else {
+        return ftp_get($ftp_resource, $dest, $source, FTP_BINARY);   
+    }
 }
 
 function fLogin($ftp_resource, string $user, string $pwd, bool $enablePassiveMode = false, bool $enablePassveOptions = true): bool
@@ -61,20 +56,25 @@ function fLogin($ftp_resource, string $user, string $pwd, bool $enablePassiveMod
     return $status;
 }
 
-function recursiveDirectory($ftp_resource, string $path, bool $isPass = false){
+function digDirectories($ftp_resource, string $path, bool $isPass = false, string $comanyID = null){
     $list = ftp_nlist($ftp_resource,$path);
     if($isPass){
-        echo '';
+        if(count($list) === 0){exit(0);}
+        foreach($list as $unmatchDir){
+            $dest = $unmatchDir;
+            is_int(strrpos($dest,'/')) ? $dest = substr($unmatchDir,strrpos($dest,'/')+1) : null;
+            download($ftp_resource,$unmatchDir,__DIR__.'/'.$comanyID.'_'.$dest,true); 
+        }
     }
     else {
-        foreach($list as $li){
-            $vendor = $li;
-            $targetUnMatched = 'unmatched';
-            $innerDir = ftp_nlist($ftp_resource,$li);
+        foreach($list as $companyID){
+            $innerDir = ftp_nlist($ftp_resource,$companyID);
             foreach($innerDir as $inDir){
-                if(strcasecmp($inDir,$targetUnMatched) === 0){
-                    recursiveDirectory()
-                }
+                $lastString = substr($inDir,strrpos($inDir,'/')+1);
+                if(strcasecmp($lastString,'unmatched') !== 0) {continue;}
+                echo $inDir.PHP_EOL;
+                // echo strcasecmp($lastString,'unmatched') === 0 ? $inDir.PHP_EOL : null ;
+                // digDirectories($ftp_resource,$inDir,true,$companyID);
             }
         }
     }
