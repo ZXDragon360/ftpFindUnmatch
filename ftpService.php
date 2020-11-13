@@ -1,7 +1,7 @@
 <?php
 try {
-    $user = 'ZXDragon360';
-    $pwd = 'Czx18Finale';
+    $user = 'yourFTPusername';
+    $pwd = 'yourFTPpassword';
     $uri = 'vftp.logicbroker.com';
     $ftp_resource = ftp_connect($uri);
 
